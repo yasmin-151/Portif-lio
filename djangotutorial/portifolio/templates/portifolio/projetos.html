@@ -1,0 +1,59 @@
+{% extends "core/base.html" %}
+
+{% block title %}Projetos - Meu Portfólio{% endblock %}
+
+{% block header_title %}Meus Projetos{% endblock %}
+
+{% block extra_css %}
+.projeto-card {
+    background: white;
+    padding: 25px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-left: 4px solid #3498db;
+}
+.projeto-card h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+.projeto-card p {
+    color: #555;
+    margin-bottom: 10px;
+}
+.projeto-card .tipo {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    color: white;
+    margin-bottom: 10px;
+}
+.tipo-pessoal {
+    background-color: #27ae60;
+}
+.tipo-disciplina {
+    background-color: #e67e22;
+}
+.projeto-card a {
+    color: #3498db;
+    text-decoration: none;
+}
+.projeto-card a:hover {
+    text-decoration: underline;
+}
+{% endblock %}
+
+{% block content %}
+<div class="projeto-card">
+    <h3>Meus Projetos</h3>
+    {% for proj in projetos %}
+        <div class="projeto-item">
+            <h4>{{ proj.nome }}</h4>
+            <p>{{ proj.descricao }}</p>
+            <a href="{{ proj.link_git }} target="_blank">Link para o GitHub</a>
+        </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
