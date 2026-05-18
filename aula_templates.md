@@ -196,7 +196,7 @@ Agora vamos criar o app que vai conter as páginas do portfólio.
 ### 3.1 Criar o app
 
 ```bash
-python manage.py startapp portifolio
+python manage.py startapp portfolio
 ```
 
 ### 3.2 Registrar no `settings.py`
@@ -211,14 +211,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'polls',
     'core',
-    'portifolio',
+    'portfolio',
 ]
 ```
 
 ### 3.3 Criar a pasta de templates
 
 ```bash
-mkdir -p portifolio/templates/portifolio
+mkdir -p portfolio/templates/portfolio
 ```
 
 ---
@@ -429,19 +429,18 @@ Crie o arquivo `portfolio/templates/portfolio/projetos.html`:
 
 ## 5. Criar as Views
 
-Abra o arqui
-vo `portfolio/views.py` e substitua o conteúdo por:
+Abra o arquivo `portfolio/views.py` e substitua o conteúdo por:
 
 ```python
 from django.shortcuts import render
 
 
 def home(request):
-    return render(request, 'portifolio/home.html')
+    return render(request, 'portfolio/home.html')
 
 
 def projetos(request):
-    return render(request, 'portifolio/projetos.html')
+    return render(request, 'portfolio/projetos.html')
 ```
 
 **Entendendo o `render()`:**
@@ -462,7 +461,7 @@ Crie o arquivo `portfolio/urls.py`:
 from django.urls import path
 from . import views
 
-app_name = 'portifolio'
+app_name = 'portfolio'
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -485,7 +484,7 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('polls/', include('polls.urls')),
-    path('portifolio/', include('portifolio.urls')),
+    path('portfolio/', include('portfolio.urls')),
 ]
 ```
 
