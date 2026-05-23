@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'tarefas',
 ]
 
 MIDDLEWARE = [
@@ -120,3 +122,26 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# ─── Configuracoes do Django REST Framework ───
+
+REST_FRAMEWORK = {
+    # Define que, por padrao, todas as views exigem autenticacao
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT (principal)
+        'rest_framework.authentication.SessionAuthentication',  # Sessao (para API navegavel)
+    ],
+    # Define que, por padrao, apenas usuarios autenticados podem acessar
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# ─── Configuracoes do SimpleJWT ───
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),   # Token de acesso vale 30 minutos
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),       # Token de refresh vale 1 dia
+}

@@ -7,5 +7,5 @@ class PessoalSerializer(serializers.ModelSerializer):
         model = Pessoal
         fields = [
             'id', 'nome', 'descricao', 'curso',
-            'periodo', 'email', 'git', 'linked', 'url_imagem',
+            'periodo', 'email', 'git', 'linked', 'imagem',
         ]
