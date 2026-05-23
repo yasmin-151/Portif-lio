@@ -51,6 +51,39 @@
 
 {% block content %}
 
+<div class="perfil">
+    <img src="{{perfil.imagem.url}}" alt="Foto do Aluno">
+    <h2>{{perfil.nome}}</h2>
+    <p>{{perfil.curso}}</p>
+</div>
+
+<div class="secao">
+    <h3>Sobre Mim</h3>
+    <p>{{perfil.descricao}}</p>
+</div>
+
+<div class="secao">
+    <h3>Dados Pessoais</h3>
+    <ul>
+        <li><strong>Nome:</strong> {{perfil.nome}}</li>
+        <li><strong>Curso:</strong> {{perfil.curso}}</li>
+        <li><strong>Período:</strong>
+            {{perfil.periodo}}</li>
+        <li><strong>E-mail:</strong> {{perfil.email}}</li>
+        <li><strong>GitHub:</strong> <a href= "{{ perfil.git }}" target="_blank">{{ perfil.git }} </a> </li>
+        <li><strong>LinkedIn:</strong> <a href= "{{ perfil.linked }}" target="_blank">{{ perfil.linked }} </a></li>
+    </ul>
+</div>
+
+<div class="secao">
+    <h3>Cursos e Certificados</h3>
+    <ul>
+        {% for cert in certificados %}
+            <li>{{ cert.descricao }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
 <!-- Botao Editar Perfil -->
 <div style="text-align: center; margin: 30px 0;">
     <button id="btn-editar" style="
@@ -166,7 +199,7 @@
 
         <div style="margin-bottom: 12px;">
             <label>URL da Imagem:</label><br>
-            <input type="url" id="edit-url_imagem" style="width: 100%; padding: 8px; margin-top: 5px;">
+            <input type="file" id="edit-imagem" style="width: 100%; padding: 8px; margin-top: 5px;">
         </div>
 
         <p id="edit-sucesso" style="color: green; display: none;">Perfil atualizado!</p>
@@ -192,42 +225,9 @@
     </div>
 </div>
 
-<div class="perfil">
-    <img src="{{perfil.imagem.url}}" alt="Foto do Aluno">
-    <h2>{{perfil.nome}}</h2>
-    <p>{{perfil.curso}}</p>
-</div>
-
-<div class="secao">
-    <h3>Sobre Mim</h3>
-    <p>{{perfil.descricao}}</p>
-</div>
-
-<div class="secao">
-    <h3>Dados Pessoais</h3>
-    <ul>
-        <li><strong>Nome:</strong> {{perfil.nome}}</li>
-        <li><strong>Curso:</strong> {{perfil.curso}}</li>
-        <li><strong>Período:</strong>
-            {{perfil.periodo}}</li>
-        <li><strong>E-mail:</strong> {{perfil.email}}</li>
-        <li><strong>GitHub:</strong> <a href= "{{ perfil.git }}" target="_blank">{{ perfil.git }} </a> </li>
-        <li><strong>LinkedIn:</strong> <a href= "{{ perfil.linked }}" target="_blank">{{ perfil.linked }} </a></li>
-    </ul>
-</div>
-
-<div class="secao">
-    <h3>Cursos e Certificados</h3>
-    <ul>
-        {% for cert in certificados %}
-            <li>{{ cert.descricao }}</li>
-        {% endfor %}
-    </ul>
-</div>
 
 <script>
 // ─── Elementos do DOM ───
-
 const btnEditar = document.getElementById('btn-editar');
 const modalLogin = document.getElementById('modal-login');
 const modalEditar = document.getElementById('modal-editar');
@@ -245,29 +245,22 @@ const editErro = document.getElementById('edit-erro');
 const API_BASE = 'http://127.0.0.1:8000';
 
 // ─── Passo 1: Clicar em "Editar" ───
-
 btnEditar.addEventListener('click', function() {
-    // Verifica se ja tem um token salvo
     const token = localStorage.getItem('access_token');
     if (token) {
-        // Ja esta logado, vai direto para o formulario
         carregarPerfil(token);
     } else {
-        // Precisa fazer login primeiro
         modalLogin.style.display = 'block';
     }
 });
 
 // ─── Passo 2: Fazer Login (obter JWT) ───
-
 btnLogin.addEventListener('click', function() {
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
 
-    // Esconde mensagem de erro anterior
     loginErro.style.display = 'none';
 
-    // POST /api/token/ → obter access e refresh tokens
     fetch(API_BASE + '/api/token/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,14 +273,9 @@ btnLogin.addEventListener('click', function() {
         return response.json();
     })
     .then(function(data) {
-        // Salva os tokens no localStorage
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
-
-        // Fecha o modal de login
         modalLogin.style.display = 'none';
-
-        // Carrega os dados do perfil e abre o formulario de edicao
         carregarPerfil(data.access);
     })
     .catch(function(erro) {
@@ -297,7 +285,6 @@ btnLogin.addEventListener('click', function() {
 });
 
 // ─── Passo 3: Carregar dados do perfil (GET /api/perfil/) ───
-
 function carregarPerfil(token) {
     fetch(API_BASE + '/api/perfil/', {
         method: 'GET',
@@ -305,16 +292,15 @@ function carregarPerfil(token) {
     })
     .then(function(response) {
         if (!response.ok) {
-            // Token expirou ou invalido
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             modalLogin.style.display = 'block';
-            throw new Error('Token expirado. Faca login novamente.');
+            throw new Error('Token expirado. Faça login novamente.');
         }
         return response.json();
     })
     .then(function(perfil) {
-        // Preenche o formulario com os dados atuais
+        // Preenche o formulário com os dados atuais da API
         document.getElementById('edit-nome').value = perfil.nome || '';
         document.getElementById('edit-descricao').value = perfil.descricao || '';
         document.getElementById('edit-curso').value = perfil.curso || '';
@@ -322,9 +308,8 @@ function carregarPerfil(token) {
         document.getElementById('edit-email').value = perfil.email || '';
         document.getElementById('edit-git').value = perfil.git || '';
         document.getElementById('edit-linked').value = perfil.linked || '';
-        document.getElementById('edit-url_imagem').value = perfil.url_imagem || '';
 
-        // Abre o modal de edicao
+        // Abre o modal de edição
         editSucesso.style.display = 'none';
         editErro.style.display = 'none';
         modalEditar.style.display = 'block';
@@ -334,31 +319,36 @@ function carregarPerfil(token) {
     });
 }
 
-// ─── Passo 4: Salvar alteracoes (PUT /api/perfil/) ───
-
+// ─── Passo 4: Salvar alterações (PUT /api/perfil/) ───
 btnSalvar.addEventListener('click', function() {
     const token = localStorage.getItem('access_token');
+    // 🌟 CORRIGIDO: Agora aponta exatamente para o id="edit-imagem" do seu HTML
+    const fotoInput = document.getElementById('edit-imagem');
 
-    // Monta o objeto com os dados do formulario
-    const dados = {
-        nome: document.getElementById('edit-nome').value,
-        descricao: document.getElementById('edit-descricao').value,
-        curso: document.getElementById('edit-curso').value,
-        periodo: document.getElementById('edit-periodo').value,
-        email: document.getElementById('edit-email').value,
-        git: document.getElementById('edit-git').value,
-        linked: document.getElementById('edit-linked').value,
-        url_imagem: document.getElementById('edit-url_imagem').value,
-    };
+    // Usamos FormData em vez de JSON para conseguir enviar o arquivo físico
+    const formData = new FormData();
+    formData.append('nome', document.getElementById('edit-nome').value);
+    formData.append('descricao', document.getElementById('edit-descricao').value);
+    formData.append('curso', document.getElementById('edit-curso').value);
+    formData.append('periodo', document.getElementById('edit-periodo').value);
+    formData.append('email', document.getElementById('edit-email').value);
+    formData.append('git', document.getElementById('edit-git').value);
+    formData.append('linked', document.getElementById('edit-linked').value);
 
-    // PUT /api/perfil/ → atualiza o perfil completo
+    // Se o usuário escolheu um arquivo novo, adiciona no formulário.
+    // 🌟 ATENÇÃO: Verifique no seu core/serializers.py se o campo se chama 'imagem'.
+    // Se no serializer estiver como 'foto', mude a palavra 'imagem' abaixo para 'foto'.
+    if (fotoInput.files[0]) {
+        formData.append('imagem', fotoInput.files[0]);
+    }
+
     fetch(API_BASE + '/api/perfil/', {
         method: 'PUT',
         headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+            // Sem 'Content-Type' aqui! O navegador resolve isso sozinho para arquivos.
         },
-        body: JSON.stringify(dados),
+        body: formData,
     })
     .then(function(response) {
         if (!response.ok) {
@@ -369,12 +359,16 @@ btnSalvar.addEventListener('click', function() {
         return response.json();
     })
     .then(function(perfil) {
-        // Mostra mensagem de sucesso
         editSucesso.style.display = 'block';
         editErro.style.display = 'none';
 
-        // Atualiza os dados na pagina (sem recarregar)
+        // Atualiza na tela sem recarregar
         atualizarPagina(perfil);
+
+        // Recarrega em 1 segundo para atualizar o resto do template Django de forma sólida
+        setTimeout(function() {
+            location.reload();
+        }, 1000);
     })
     .catch(function(erro) {
         editErro.textContent = 'Erro ao salvar: ' + erro.message;
@@ -383,31 +377,24 @@ btnSalvar.addEventListener('click', function() {
     });
 });
 
-// ─── Passo 5: Atualizar a pagina com os novos dados ───
-
+// ─── Passo 5: Atualizar a página com os novos dados ───
 function atualizarPagina(perfil) {
-    // Atualiza os elementos HTML com os dados retornados pela API
-    // Ajuste os seletores conforme a estrutura do seu template
-
-    // Exemplo: se voce tem elementos com essas classes/ids
     const secaoDados = document.querySelector('.secao ul');
     if (secaoDados) {
         secaoDados.innerHTML =
             '<li><strong>Nome:</strong> ' + perfil.nome + '</li>' +
             '<li><strong>Curso:</strong> ' + perfil.curso + '</li>' +
-            '<li><strong>Periodo:</strong> ' + perfil.periodo + '</li>' +
+            '<li><strong>Período:</strong> ' + perfil.periodo + '</li>' +
             '<li><strong>E-mail:</strong> ' + perfil.email + '</li>' +
             '<li><strong>GitHub:</strong> ' + perfil.git + '</li>' +
             '<li><strong>LinkedIn:</strong> ' + perfil.linked + '</li>';
     }
 
-    // Atualiza o nome no perfil
     const perfilNome = document.querySelector('.perfil h2');
     if (perfilNome) {
         perfilNome.textContent = perfil.nome;
     }
 
-    // Atualiza a descricao
     const secaoSobre = document.querySelectorAll('.secao')[0];
     if (secaoSobre) {
         const paragrafo = secaoSobre.querySelector('p');
@@ -416,15 +403,13 @@ function atualizarPagina(perfil) {
         }
     }
 
-    // Atualiza a imagem
     const perfilImg = document.querySelector('.perfil img');
-    if (perfilImg && perfil.url_imagem) {
-        perfilImg.src = perfil.url_imagem;
+    if (perfilImg && perfil.imagem) {
+        perfilImg.src = perfil.imagem;
     }
 }
 
-// ─── Botoes de cancelar ───
-
+// ─── Botões de cancelar ───
 btnCancelarLogin.addEventListener('click', function() {
     modalLogin.style.display = 'none';
 });
