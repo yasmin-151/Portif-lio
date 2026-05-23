@@ -95,6 +95,18 @@
         border-radius: 5px;
         cursor: pointer;
     ">Editar Perfil</button>
+
+    <button id="btn-sair" style="
+        display: none;
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 1.1em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px;
+    ">Sair</button>
 </div>
 
 <!-- Modal de Login -->
@@ -229,6 +241,8 @@
 <script>
 // ─── Elementos do DOM ───
 const btnEditar = document.getElementById('btn-editar');
+const btnSair = document.getElementById('btn-sair'); // 🌟 Desafio Extra
+
 const modalLogin = document.getElementById('modal-login');
 const modalEditar = document.getElementById('modal-editar');
 
@@ -244,15 +258,45 @@ const editErro = document.getElementById('edit-erro');
 // URL base da API
 const API_BASE = 'http://127.0.0.1:8000';
 
+// ─── 🌟 Função para Controlar a Visibilidade do Botão Sair ───
+function gerenciarBotaoSair() {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        btnSair.style.display = 'inline-block'; // Mostra o botão se estiver logado
+    } else {
+        btnSair.style.display = 'none'; // Esconde se deslogado
+    }
+}
+
+// Executa assim que a página abre para checar o estado do login
+gerenciarBotaoSair();
+
+
 // ─── Passo 1: Clicar em "Editar" ───
 btnEditar.addEventListener('click', function() {
     const token = localStorage.getItem('access_token');
     if (token) {
+        // Desafio 1: Já tem token? Pula o login e vai direto buscar os dados do perfil
         carregarPerfil(token);
     } else {
+        // Não tem token? Abre o modal de login
         modalLogin.style.display = 'block';
     }
 });
+
+
+// ─── 🌟 Desafio 2: Botão "Sair" ───
+btnSair.addEventListener('click', function() {
+    // Remove os tokens do localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+
+    // Atualiza a interface e recarrega para limpar dados privados se houver
+    gerenciarBotaoSair();
+    alert('Você saiu com sucesso!');
+    location.reload();
+});
+
 
 // ─── Passo 2: Fazer Login (obter JWT) ───
 btnLogin.addEventListener('click', function() {
@@ -275,7 +319,10 @@ btnLogin.addEventListener('click', function() {
     .then(function(data) {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
+
         modalLogin.style.display = 'none';
+        gerenciarBotaoSair(); // Atualiza o botão Sair na tela
+
         carregarPerfil(data.access);
     })
     .catch(function(erro) {
@@ -292,15 +339,17 @@ function carregarPerfil(token) {
     })
     .then(function(response) {
         if (!response.ok) {
+            // Se o token estiver inválido/expirado, limpa e força login
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            gerenciarBotaoSair();
             modalLogin.style.display = 'block';
             throw new Error('Token expirado. Faça login novamente.');
         }
         return response.json();
     })
     .then(function(perfil) {
-        // Preenche o formulário com os dados atuais da API
+        // Preenche o formulário com os dados do banco
         document.getElementById('edit-nome').value = perfil.nome || '';
         document.getElementById('edit-descricao').value = perfil.descricao || '';
         document.getElementById('edit-curso').value = perfil.curso || '';
@@ -309,7 +358,7 @@ function carregarPerfil(token) {
         document.getElementById('edit-git').value = perfil.git || '';
         document.getElementById('edit-linked').value = perfil.linked || '';
 
-        // Abre o modal de edição
+        // Abre o formulário de edição
         editSucesso.style.display = 'none';
         editErro.style.display = 'none';
         modalEditar.style.display = 'block';
@@ -322,10 +371,8 @@ function carregarPerfil(token) {
 // ─── Passo 4: Salvar alterações (PUT /api/perfil/) ───
 btnSalvar.addEventListener('click', function() {
     const token = localStorage.getItem('access_token');
-    // 🌟 CORRIGIDO: Agora aponta exatamente para o id="edit-imagem" do seu HTML
     const fotoInput = document.getElementById('edit-imagem');
 
-    // Usamos FormData em vez de JSON para conseguir enviar o arquivo físico
     const formData = new FormData();
     formData.append('nome', document.getElementById('edit-nome').value);
     formData.append('descricao', document.getElementById('edit-descricao').value);
@@ -335,9 +382,6 @@ btnSalvar.addEventListener('click', function() {
     formData.append('git', document.getElementById('edit-git').value);
     formData.append('linked', document.getElementById('edit-linked').value);
 
-    // Se o usuário escolheu um arquivo novo, adiciona no formulário.
-    // 🌟 ATENÇÃO: Verifique no seu core/serializers.py se o campo se chama 'imagem'.
-    // Se no serializer estiver como 'foto', mude a palavra 'imagem' abaixo para 'foto'.
     if (fotoInput.files[0]) {
         formData.append('imagem', fotoInput.files[0]);
     }
@@ -346,7 +390,6 @@ btnSalvar.addEventListener('click', function() {
         method: 'PUT',
         headers: {
             'Authorization': 'Bearer ' + token
-            // Sem 'Content-Type' aqui! O navegador resolve isso sozinho para arquivos.
         },
         body: formData,
     })
@@ -362,13 +405,14 @@ btnSalvar.addEventListener('click', function() {
         editSucesso.style.display = 'block';
         editErro.style.display = 'none';
 
-        // Atualiza na tela sem recarregar
         atualizarPagina(perfil);
 
-        // Recarrega em 1 segundo para atualizar o resto do template Django de forma sólida
+        // ─── 🌟 Desafio 3: Recarregar a página após salvar ───
+        // Aguarda 1 segundo para o usuário ver a mensagem verde de "Perfil atualizado!" e dá o reload
         setTimeout(function() {
-            location.reload();
-        }, 1000);
+            modalEditar.style.display = 'none';
+            location.reload(); // Recarrega a página de forma sólida
+        }, 1200);
     })
     .catch(function(erro) {
         editErro.textContent = 'Erro ao salvar: ' + erro.message;
@@ -377,7 +421,7 @@ btnSalvar.addEventListener('click', function() {
     });
 });
 
-// ─── Passo 5: Atualizar a página com os novos dados ───
+// ─── Passo 5: Atualizar a página dinamicamente ───
 function atualizarPagina(perfil) {
     const secaoDados = document.querySelector('.secao ul');
     if (secaoDados) {
