@@ -63,9 +63,11 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.notificacao_ms',  # Adicionar esta linha
             ],
         },
     },
@@ -145,3 +147,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),   # Token de acesso vale 30 minutos
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),       # Token de refresh vale 1 dia
 }
+
+# ─── Microservico de Notificacao ───
+NOTIFICACAO_MS_URL = 'http://127.0.0.1:8001'
+NOTIFICACAO_MS_API_KEY = 'dc0e0a220a754996'  # Hash da empresa criada no microservico

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang = pt-br>
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %} Meu Portifólio {% endblock %}</title>
+    <title>{% block title %}Meu Portfolio{% endblock %}</title>
     <style>
         * {
             margin: 0;
@@ -28,6 +28,7 @@
             background-color: #34495e;
             padding: 10px 0;
             text-align: center;
+            position: relative;
         }
         nav a {
             color: white;
@@ -50,18 +51,128 @@
             padding: 15px 0;
             margin-top: 40px;
         }
-        {%block extra_css%}{% endblock %}
+
+        /* ─── Estilos do Sino de Notificacoes ─── */
+        .sino-container {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .sino-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.4em;
+            cursor: pointer;
+            position: relative;
+        }
+        .sino-badge {
+            position: absolute;
+            top: -8px;
+            right: -10px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.65em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .sino-badge.sem-conexao {
+            background-color: #95a5a6;
+        }
+        .sino-badge.sem-mensagens {
+            background-color: #27ae60;
+        }
+
+        /* ─── Dropdown de Notificacoes ─── */
+        .notif-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 40px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            width: 320px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 999;
+        }
+        .notif-dropdown.aberto {
+            display: block;
+        }
+        .notif-dropdown-header {
+            padding: 12px 15px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+        }
+        .notif-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .notif-item:hover {
+            background: #f8f9fa;
+        }
+        .notif-item.nao-lida {
+            border-left: 3px solid #3498db;
+            background: #eef6ff;
+        }
+        .notif-item .notif-mensagem {
+            font-size: 0.9em;
+            color: #333;
+        }
+        .notif-item .notif-data {
+            font-size: 0.75em;
+            color: #999;
+            margin-top: 4px;
+        }
+        .notif-vazio {
+            padding: 20px;
+            text-align: center;
+            color: #999;
+        }
+
+        {% block extra_css %}{% endblock %}
     </style>
 </head>
 <body>
     <header>
-        <h1> {% block header_title %}Portfólio do Aluno{% endblock %} </h1>
+        <h1>{% block header_title %}Portfolio do Aluno{% endblock %}</h1>
     </header>
 
     <nav>
-        <a href="{% url 'portifolio:home' %}">Início</a>
+        <a href="{% url 'portifolio:home' %}">Inicio</a>
         <a href="{% url 'portifolio:projetos' %}">Projetos</a>
-        <a href="{% url 'portifolio:contato' %}">Contato</a>
+
+        <!-- Sino de Notificacoes -->
+        {% if user.is_authenticated %}
+        <div class="sino-container">
+            <button class="sino-btn" id="sino-btn" title="Notificacoes">
+                &#128276;
+                <span class="sino-badge sem-conexao" id="sino-badge">X</span>
+            </button>
+            <div class="notif-dropdown" id="notif-dropdown">
+                <div class="notif-dropdown-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Notificações</span>
+                    <button id="marcar-todas-btn" style="background: none; border: none; color: #3498db; cursor: pointer; font-size: 0.8em; font-weight: normal;">
+                        Marcar todas como lidas
+                    </button>
+                </div>
+                <div id="notif-lista">
+                    <div class="notif-vazio">Carregando...</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </nav>
 
     <div class="container">
@@ -69,7 +180,173 @@
     </div>
 
     <footer>
-        <p>&copy; 2026 - Portfólio Acadêmico | UAST</p>
+        <p>&copy; 2026 - Portfolio Academico | UAST</p>
     </footer>
+
+    <!-- JavaScript do Sino de Notificacoes -->
+    {% if user.is_authenticated %}
+    <script>
+    (function() {
+        // ─── Configuracoes vindas do Django (context processor) ───
+        var MS_URL = '{{ NOTIFICACAO_MS_URL }}';
+        var API_KEY = '{{ NOTIFICACAO_MS_API_KEY }}';
+        var USER_ID = '{{ NOTIFICACAO_USER_ID }}';
+
+        // ─── Elementos do DOM ───
+        var sinoBtn = document.getElementById('sino-btn');
+        var sinoBadge = document.getElementById('sino-badge');
+        var dropdown = document.getElementById('notif-dropdown');
+        var notifLista = document.getElementById('notif-lista');
+
+        // ─── Headers padrao para todas as requisicoes ───
+        var headers = {
+            'X-Api-Key': API_KEY,
+            'X-User-Id': USER_ID,
+        };
+
+        // ─── Funcao: Buscar contagem de nao lidas ───
+        function buscarContagem() {
+            fetch(MS_URL + '/api/notificacoes/nao-lidas/', { headers: headers })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Erro na API');
+                    return response.json();
+                })
+                .then(function(data) {
+                    var count = data.count;
+
+                    // Remove classes anteriores
+                    sinoBadge.classList.remove('sem-conexao', 'sem-mensagens');
+
+                    if (count === 0) {
+                        sinoBadge.textContent = '0';
+                        sinoBadge.classList.add('sem-mensagens');
+                    } else {
+                        sinoBadge.textContent = count;
+                    }
+                })
+                .catch(function() {
+                    // Sem conexao com o microservico
+                    sinoBadge.textContent = 'X';
+                    sinoBadge.classList.remove('sem-mensagens');
+                    sinoBadge.classList.add('sem-conexao');
+                });
+        }
+
+        // ─── Funcao: Buscar lista de notificacoes ───
+        function buscarNotificacoes() {
+            fetch(MS_URL + '/api/notificacoes/', { headers: headers })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Erro na API');
+                    return response.json();
+                })
+                .then(function(notificacoes) {
+                    if (notificacoes.length === 0) {
+                        notifLista.innerHTML = '<div class="notif-vazio">Nenhuma notificacao.</div>';
+                        return;
+                    }
+
+                    var html = '';
+                    // Procure por esse bloco dentro da função buscarNotificacoes():
+notificacoes.forEach(function(notif) {
+    var classe = notif.is_read ? 'notif-item' : 'notif-item nao-lida';
+    var data = new Date(notif.criado_em).toLocaleString('pt-BR');
+
+    // Substitua a montagem antiga por esta nova com a tag do título:
+    html += '<div class="' + classe + '" data-id="' + notif.id + '">';
+    html += '  <div class="notif-titulo" style="font-weight: bold; font-size: 0.95em; color: #2c3e50; margin-bottom: 3px;">' + notif.titulo + '</div>';
+    html += '  <div class="notif-mensagem" style="font-size: 0.85em; color: #555;">' + notif.mensagem + '</div>';
+    html += '  <div class="notif-data">' + data + '</div>';
+    html += '</div>';
+});
+
+                    notifLista.innerHTML = html;
+
+                    // Adicionar evento de click para marcar como lida
+                    var items = notifLista.querySelectorAll('.notif-item.nao-lida');
+                    items.forEach(function(item) {
+                        item.addEventListener('click', function() {
+                            var id = this.getAttribute('data-id');
+                            marcarComoLida(id, this);
+                        });
+                    });
+                })
+                .catch(function() {
+                    notifLista.innerHTML = '<div class="notif-vazio">Erro ao carregar notificacoes.</div>';
+                });
+        }
+
+        // ─── Funcao: Marcar notificacao como lida ───
+        function marcarComoLida(id, elemento) {
+            fetch(MS_URL + '/api/notificacoes/' + id + '/lida/', {
+                method: 'PATCH',
+                headers: headers,
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error('Erro');
+                return response.json();
+            })
+            .then(function() {
+                // Remove o destaque visual
+                elemento.classList.remove('nao-lida');
+                // Atualiza a contagem
+                buscarContagem();
+            })
+            .catch(function(erro) {
+                console.error('Erro ao marcar como lida:', erro);
+            });
+        }
+
+        // ─── Abrir/Fechar dropdown ───
+        sinoBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var aberto = dropdown.classList.contains('aberto');
+
+            if (aberto) {
+                dropdown.classList.remove('aberto');
+            } else {
+                dropdown.classList.add('aberto');
+                buscarNotificacoes();
+            }
+        });
+
+        // Fechar dropdown ao clicar fora
+        document.addEventListener('click', function() {
+            dropdown.classList.remove('aberto');
+        });
+
+        dropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // ─── Polling: buscar contagem a cada 5 segundos ───
+        buscarContagem();  // Primeira busca imediata
+        setInterval(buscarContagem, 5000);  // Depois, a cada 5 segundos
+
+            // ─── Botão: Marcar todas como lidas ───
+var marcarTodasBtn = document.getElementById('marcar-todas-btn');
+
+marcarTodasBtn.addEventListener('click', function(e) {
+    e.stopPropagation(); // Evita que o dropdown se feche ao clicar no botão
+
+    fetch(MS_URL + '/api/notificacoes/marcar-todas-lidas/', {
+        method: 'PATCH',
+        headers: headers
+    })
+    .then(function(response) {
+        if (!response.ok) throw new Error('Erro na requisição');
+        return response.json();
+    })
+    .then(function() {
+        // Atualiza a interface: reconta as não lidas e remonta a lista limpa
+        buscarContagem();
+        buscarNotificacoes();
+    })
+    .catch(function(erro) {
+        console.error('Erro ao marcar todas como lidas:', erro);
+    });
+});
+    })();
+    </script>
+    {% endif %}
 </body>
 </html>

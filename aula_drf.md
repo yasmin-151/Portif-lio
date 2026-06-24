@@ -1071,7 +1071,7 @@ Isso confirma que a API esta protegida. Sem autenticacao, ninguem acessa.
 ```bash
 curl -X POST http://127.0.0.1:8000/api/token/ \
      -H "Content-Type: application/json" \
-     -d '{"username": "admin", "password": "sua_senha_aqui"}'
+     -d '{"username": "", "password": "sua_senha_aqui"}'
 ```
 
 **Resposta esperada (200 OK):**
